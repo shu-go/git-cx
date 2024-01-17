@@ -137,7 +137,7 @@ func (c globalCmd) defaultRule() Rule {
 		DenyEmptyType:     false,
 		DenyAdlibType:     false,
 		UseBreakingChange: false,
-		Header:            "{{.type}}{{.scope_with_parens}}{{.bang}}: {{.emoji_unicode}}{{.description}}",
+		HeaderFormat:      "{{.type}}{{.scope_with_parens}}{{.bang}}: {{.emoji_unicode}}{{.description}}",
 		HeaderFormatHint:  ".type, .scope, .scope_with_parens, .bang(if BREAKING CHANGE), .emoji, .emoji_unicode, .description",
 	}
 }
@@ -408,7 +408,7 @@ func (c globalCmd) buildupCommitMessage() string {
 			bang = "!"
 		}
 
-		templ := template.Must(template.New("").Parse(c.rule.Header))
+		templ := template.Must(template.New("").Parse(c.rule.HeaderFormat))
 		buf := bytes.Buffer{}
 		templ.Execute(&buf, map[string]string{
 			"type":              typ,

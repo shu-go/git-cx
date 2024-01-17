@@ -12,7 +12,7 @@ type CommitType struct {
 }
 
 type Rule struct {
-	Header           string `json:"headerFormat"`
+	HeaderFormat     string `json:"headerFormat"`
 	HeaderFormatHint string `json:"headerFormatHint"`
 
 	Types *orderedmap.OrderedMap[string, CommitType] `json:"types"` //map[string]CommitType
