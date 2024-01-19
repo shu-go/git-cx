@@ -75,7 +75,9 @@ func (c globalCmd) Run() error {
 			//println(f, s.Worktree, s.Staging)
 			switch s.Worktree {
 			case git.Modified, git.Added, git.Deleted, git.Renamed, git.Copied, git.UpdatedButUnmerged:
-				wt.Add(f)
+				if _, err := wt.Add(f); err != nil {
+					return err
+				}
 			default:
 				//nop
 			}
@@ -410,7 +412,7 @@ func (c globalCmd) buildupCommitMessage() string {
 
 		templ := template.Must(template.New("").Parse(c.rule.HeaderFormat))
 		buf := bytes.Buffer{}
-		templ.Execute(&buf, map[string]string{
+		err := templ.Execute(&buf, map[string]string{
 			"type":              typ,
 			"scope":             scope,
 			"scope_with_parens": scopeWithParens,
@@ -419,6 +421,14 @@ func (c globalCmd) buildupCommitMessage() string {
 			"emoji_unicode":     emojiUnicode,
 			"description":       desc,
 		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%v: %q\n", err, c.rule.HeaderFormat)
+			buf.WriteString(typ)
+			buf.WriteString(scopeWithParens)
+			buf.WriteString(bang)
+			buf.WriteString(": ")
+			buf.WriteString(desc)
+		}
 		header = buf.String()
 	}
 	msg := header
