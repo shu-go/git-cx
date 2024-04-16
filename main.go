@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -112,7 +113,20 @@ func (c globalCmd) Run() error {
 		return nil
 	}
 
-	_, err = wt.Commit(msg, &git.CommitOptions{})
+	f, err := os.CreateTemp("", "")
+	if err != nil {
+		return err
+	}
+	_, err = f.WriteString(msg)
+	if err != nil {
+		f.Close()
+		return err
+	}
+	f.Close()
+
+	cmd := exec.Command("git", "commit", "-F", f.Name())
+	err = cmd.Run()
+	os.Remove(f.Name())
 	if err != nil {
 		return err
 	}
