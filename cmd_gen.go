@@ -23,7 +23,7 @@ func (c genCmd) Run(g globalCmd, args []string) error {
 
 	fmt.Fprintf(os.Stderr, "output: %v\n", filename)
 
-	rule := g.defaultRule()
+	rule := defaultRule()
 
 	content, err := json.MarshalIndent(rule, "", "  ")
 	if err != nil {

@@ -104,7 +104,7 @@ func (c globalCmd) Run() error {
 		}
 	}
 
-	if err := c.prepare(wt.Filesystem.Root()); err != nil {
+	if err := c.prepare(repos); err != nil {
 		return err
 	}
 
@@ -137,12 +137,12 @@ func (c globalCmd) Run() error {
 	return nil
 }
 
-func (c *globalCmd) prepare(rootDir string) error {
-	c.rule = c.readRuleFile(rootDir)
+func (c *globalCmd) prepare(repos *git.Repository) error {
+	c.rule, _ = readRuleFile(repos)
 
 	// scope history
 
-	c.scopes, c.scopesFileName, c.writeBackScopeHisotry = c.readScopesFile(rootDir)
+	c.scopes, c.scopesFileName, c.writeBackScopeHisotry = readScopesFile(repos)
 	if c.scopes == nil {
 		c.scopes = make(Scopes)
 	}
@@ -150,9 +150,9 @@ func (c *globalCmd) prepare(rootDir string) error {
 	return nil
 }
 
-func (c globalCmd) defaultRule() Rule {
+func defaultRule() Rule {
 	return Rule{
-		Types:             c.defaultCommitTypes(),
+		Types:             defaultCommitTypes(),
 		DenyEmptyType:     false,
 		DenyAdlibType:     false,
 		UseBreakingChange: false,
@@ -161,7 +161,7 @@ func (c globalCmd) defaultRule() Rule {
 	}
 }
 
-func (c globalCmd) defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
+func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
 	ct := orderedmap.New[string, CommitType]()
 	ct.Set("# comment1", commitTypeAsOM(
 		"comment starts with #",
@@ -219,23 +219,30 @@ func (c globalCmd) defaultCommitTypes() *orderedmap.OrderedMap[string, CommitTyp
 	return ct
 }
 
-func (c globalCmd) readRuleFile(rootDir string) *Rule {
-	// config
-	if cfg := c.getConfig(configRule); cfg != nil {
-		if r, err := tryReadRuleFile(filepath.Join(rootDir, *cfg)); err == nil {
-			return r
-		}
+func readRuleFile(repos *git.Repository) (*Rule, string) {
+	var rootDir string
+	if wt, err := repos.Worktree(); err == nil {
+		rootDir = wt.Filesystem.Root()
 	}
 
-	// rootDir
-	if r, err := tryReadRuleFile(filepath.Join(rootDir, defaultRuleFileName)); err == nil {
-		return r
+	if rootDir != "" {
+		// config
+		if cfg := getGitConfig(repos, configRule); cfg != nil {
+			if r, err := tryReadRuleFile(filepath.Join(rootDir, *cfg)); err == nil {
+				return r, filepath.Join(rootDir, *cfg) + " (worktree config)"
+			}
+		}
+
+		// rootDir
+		if r, err := tryReadRuleFile(filepath.Join(rootDir, defaultRuleFileName)); err == nil {
+			return r, filepath.Join(rootDir, defaultRuleFileName) + " (worktree file)"
+		}
 	}
 
 	// user config dir
 	if cp, err := os.UserConfigDir(); err == nil {
 		if r, err := tryReadRuleFile(filepath.Join(cp, userConfigFolder, defaultRuleFileName)); err == nil {
-			return r
+			return r, filepath.Join(cp, userConfigFolder, defaultRuleFileName) + " (user config dir)"
 		}
 	}
 
@@ -243,12 +250,12 @@ func (c globalCmd) readRuleFile(rootDir string) *Rule {
 	if ep, err := os.Executable(); err != nil {
 		ed, _ := filepath.Split(ep)
 		if r, err := tryReadRuleFile(filepath.Join(ed, defaultRuleFileName)); err == nil {
-			return r
+			return r, filepath.Join(ed, defaultRuleFileName) + " (exe dir)"
 		}
 	}
 
-	r := c.defaultRule()
-	return &r
+	r := defaultRule()
+	return &r, "(default)"
 }
 
 func commitTypeAsOM(desc string, emoji string) CommitType {
@@ -284,19 +291,26 @@ func tryReadRuleFile(filename string) (*Rule, error) {
 	return &r, nil
 }
 
-func (c globalCmd) readScopesFile(rootDir string) (Scopes, string, bool) {
-	// config
-	if cfg := c.getConfig(configScopeHistory); cfg != nil {
-		filename := filepath.Join(rootDir, *cfg)
+func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string, writeback bool) {
+	var rootDir string
+	if wt, err := repos.Worktree(); err == nil {
+		rootDir = wt.Filesystem.Root()
+	}
+
+	if rootDir != "" {
+		// config
+		if cfg := getGitConfig(repos, configScopeHistory); cfg != nil {
+			filename := filepath.Join(rootDir, *cfg)
+			if sc, err := tryReadScopesFile(filename); err == nil {
+				return sc, filename, true
+			}
+		}
+
+		// rootDir
+		filename := filepath.Join(rootDir, defaultScopesFileName)
 		if sc, err := tryReadScopesFile(filename); err == nil {
 			return sc, filename, true
 		}
-	}
-
-	// rootDir
-	filename := filepath.Join(rootDir, defaultScopesFileName)
-	if sc, err := tryReadScopesFile(filename); err == nil {
-		return sc, filename, true
 	}
 
 	// user config dir
@@ -343,8 +357,8 @@ func tryReadScopesFile(filename string) (Scopes, error) {
 	return sc, nil
 }
 
-func (c globalCmd) getConfig(key string) *string {
-	config, err := c.repository.Config()
+func getGitConfig(repos *git.Repository, key string) *string {
+	config, err := repos.Config()
 	if err != nil {
 		return nil
 	}
@@ -660,6 +674,14 @@ func filterSuggestions(suggestions []prompt.Suggest, sub string, ignoreCase bool
 var Version string
 
 func main() {
+	rule, scope := getPathToHelp()
+	if rule != "" {
+		rule = "\nrule: " + rule + "\n"
+	}
+	if scope != "" {
+		scope = "scope: " + scope + "\n"
+	}
+
 	app := gli.NewWith(&globalCmd{})
 	app.Name = "git-cx"
 	app.Desc = "A conventional commits tool"
@@ -675,6 +697,7 @@ git cx
 git cx gen
 (edit .cx.json)
 git cx
+` + rule + scope + `
 
 # record and complete scope history
 (gitconfig: [cx] scopes=.scopes.json)`
@@ -684,4 +707,16 @@ git cx
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func getPathToHelp() (rule string, scope string) {
+	repos, err := git.PlainOpenWithOptions(".", &git.PlainOpenOptions{DetectDotGit: true})
+	if err != nil {
+		return "", ""
+	}
+
+	_, rule = readRuleFile(repos)
+	_, scope, _ = readScopesFile(repos)
+
+	return rule, scope
 }
