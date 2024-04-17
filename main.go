@@ -38,9 +38,8 @@ type globalCmd struct {
 
 	rule *Rule
 
-	scopesFileName        string
-	scopes                Scopes
-	writeBackScopeHisotry bool
+	scopesFileName string
+	scopes         Scopes
 
 	All bool `cli:"all,a" help:"commit all changed files"`
 
@@ -142,7 +141,7 @@ func (c *globalCmd) prepare(repos *git.Repository) error {
 
 	// scope history
 
-	c.scopes, c.scopesFileName, c.writeBackScopeHisotry = readScopesFile(repos)
+	c.scopes, c.scopesFileName = readScopesFile(repos)
 	if c.scopes == nil {
 		c.scopes = make(Scopes)
 	}
@@ -291,7 +290,7 @@ func tryReadRuleFile(filename string) (*Rule, error) {
 	return &r, nil
 }
 
-func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string, writeback bool) {
+func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string) {
 	var rootDir string
 	if wt, err := repos.Worktree(); err == nil {
 		rootDir = wt.Filesystem.Root()
@@ -302,14 +301,14 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string, writ
 		if cfg := getGitConfig(repos, configScopeHistory); cfg != nil {
 			filename := filepath.Join(rootDir, *cfg)
 			if sc, err := tryReadScopesFile(filename); err == nil {
-				return sc, filename, true
+				return sc, filename
 			}
 		}
 
 		// rootDir
 		filename := filepath.Join(rootDir, defaultScopesFileName)
 		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename, true
+			return sc, filename
 		}
 	}
 
@@ -317,7 +316,7 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string, writ
 	if cp, err := os.UserConfigDir(); err == nil {
 		filename := filepath.Join(cp, userConfigFolder, defaultScopesFileName)
 		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename, false
+			return sc, filename
 		}
 	}
 
@@ -326,11 +325,11 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string, writ
 		ed, _ := filepath.Split(ep)
 		filename := filepath.Join(ed, defaultScopesFileName)
 		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename, false
+			return sc, filename
 		}
 	}
 
-	return nil, "", false
+	return nil, ""
 }
 
 func tryReadScopesFile(filename string) (Scopes, error) {
@@ -390,7 +389,7 @@ func (c globalCmd) buildupCommitMessage() string {
 
 	// write back scope history
 
-	if scope != "" && c.writeBackScopeHisotry {
+	if scope != "" && c.scopesFileName != "" {
 		c.scopes[scope] = time.Now()
 
 		type tmpscope struct {
@@ -716,7 +715,7 @@ func getPathToHelp() (rule string, scope string) {
 	}
 
 	_, rule = readRuleFile(repos)
-	_, scope, _ = readScopesFile(repos)
+	_, scope = readScopesFile(repos)
 
 	return rule, scope
 }
