@@ -65,7 +65,10 @@ func (c globalCmd) Run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(os.Stderr, wd)
+
+	if c.Debug {
+		fmt.Fprintln(os.Stderr, wd)
+	}
 
 	if !c.Debug && c.All {
 		st, err := wt.Status()
