@@ -18,6 +18,7 @@ import (
 	git "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/kyokomi/emoji/v2"
+	"github.com/shu-go/findcfg"
 	"github.com/shu-go/gli"
 	"github.com/shu-go/orderedmap"
 )
@@ -25,7 +26,7 @@ import (
 const (
 	userConfigFolder = "git-cx"
 
-	defaultRuleFileName   = ".cx.json"
+	defaultRuleFileName   = ".cx"
 	defaultScopesFileName = ".scope-history.json"
 
 	configSection      = "cx"
@@ -224,37 +225,30 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 		rootDir = wt.Filesystem.Root()
 	}
 
+	var exactPath string
 	if rootDir != "" {
 		// config
 		if cfg := getGitConfig(repos, configRule); cfg != nil {
-			if r, err := tryReadRuleFile(filepath.Join(rootDir, *cfg)); err == nil {
-				return r, filepath.Join(rootDir, *cfg) + " (worktree config)"
-			}
-		}
-
-		// rootDir
-		if r, err := tryReadRuleFile(filepath.Join(rootDir, defaultRuleFileName)); err == nil {
-			return r, filepath.Join(rootDir, defaultRuleFileName) + " (worktree file)"
+			exactPath = filepath.Join(rootDir, *cfg)
 		}
 	}
 
-	// user config dir
-	if cp, err := os.UserConfigDir(); err == nil {
-		if r, err := tryReadRuleFile(filepath.Join(cp, userConfigFolder, defaultRuleFileName)); err == nil {
-			return r, filepath.Join(cp, userConfigFolder, defaultRuleFileName) + " (user config dir)"
-		}
-	}
-
-	// executable dir
-	if ep, err := os.Executable(); err != nil {
-		ed, _ := filepath.Split(ep)
-		if r, err := tryReadRuleFile(filepath.Join(ed, defaultRuleFileName)); err == nil {
-			return r, filepath.Join(ed, defaultRuleFileName) + " (exe dir)"
+	finder := findcfg.New(
+		findcfg.ExactPath(exactPath),
+		findcfg.JSON(),
+		findcfg.Dir(rootDir),
+		findcfg.UserConfigDir(userConfigFolder),
+		findcfg.ExecutableDir(),
+	)
+	found := finder.Find(defaultRuleFileName)
+	if found != nil {
+		if r, err := tryReadRuleFile(found.Path); err == nil {
+			return r, found.Path
 		}
 	}
 
 	r := defaultRule()
-	return &r, "(default)"
+	return &r, finder.FallbackPath(defaultRuleFileName)
 }
 
 func commitTypeAsOM(desc string, emoji string) CommitType {

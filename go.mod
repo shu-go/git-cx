@@ -8,7 +8,7 @@ require (
 	github.com/c-bata/go-prompt v0.2.6
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/kyokomi/emoji/v2 v2.2.12
-	github.com/shu-go/findcfg v0.0.0-20240419123445-fd09748ea166
+	github.com/shu-go/findcfg v0.1.0
 	github.com/shu-go/gli v1.5.7
 	github.com/shu-go/orderedmap v0.1.0
 )

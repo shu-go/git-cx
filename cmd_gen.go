@@ -11,7 +11,7 @@ type genCmd struct {
 }
 
 func (c genCmd) Run(g globalCmd, args []string) error {
-	filename := defaultRuleFileName
+	filename := defaultRuleFileName + ".json"
 	if len(args) > 0 {
 		filename = args[0]
 	}
