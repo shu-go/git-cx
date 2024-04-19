@@ -21,6 +21,7 @@ import (
 	"github.com/shu-go/findcfg"
 	"github.com/shu-go/gli"
 	"github.com/shu-go/orderedmap"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -46,7 +47,7 @@ type globalCmd struct {
 
 	Debug bool `cli:"debug" default:"false" help:"do not commit, do output to stdout"`
 
-	Gen genCmd `cli:"generate,gen" help:"generate rule json file"`
+	Gen genCmd `cli:"generate,gen" help:"generate rule file"`
 }
 
 func (c globalCmd) Run() error {
@@ -235,6 +236,7 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 
 	finder := findcfg.New(
 		findcfg.ExactPath(exactPath),
+		findcfg.YAML(),
 		findcfg.JSON(),
 		findcfg.Dir(rootDir),
 		findcfg.UserConfigDir(userConfigFolder),
@@ -277,10 +279,25 @@ func tryReadRuleFile(filename string) (*Rule, error) {
 	r := Rule{
 		Types: orderedmap.New[string, CommitType](),
 	}
-	if err := json.Unmarshal(content, &r); err != nil {
-		return nil, err
-	}
 
+	if in(filepath.Ext(filename), ".yaml", ".yml") {
+		if err := yaml.Unmarshal(content, &r); err != nil {
+			return nil, err
+		}
+		return &r, nil
+	}
+	if in(filepath.Ext(filename), ".json") {
+		if err := json.Unmarshal(content, &r); err != nil {
+			return nil, err
+		}
+		return &r, nil
+	}
+	if err := yaml.Unmarshal(content, &r); err != nil {
+		if err := json.Unmarshal(content, &r); err != nil {
+			return nil, err
+		}
+		return &r, nil
+	}
 	return &r, nil
 }
 
@@ -678,7 +695,7 @@ git cx
 
 # customize
 git cx gen
-(edit .cx.json)
+(edit .cx.yaml)
 git cx
 ` + rule + scope + `
 
@@ -702,4 +719,18 @@ func getPathToHelp() (rule string, scope string) {
 	_, scope = readScopesFile(repos)
 
 	return rule, scope
+}
+
+func in(s string, choices ...string) bool {
+	if len(choices) == 0 {
+		return false
+	}
+
+	for i := 0; i < len(choices); i++ {
+		if strings.EqualFold(s, choices[i]) {
+			return true
+		}
+	}
+
+	return false
 }

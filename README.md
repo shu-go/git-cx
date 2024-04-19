@@ -31,36 +31,32 @@ First, generate a rule file.
 ```
 git cx gen
 
-# The default name is .cx.json.
+# The default name is .cx.yaml.
 
 # You can give it a name
-git cx gen myrule.json
+git cx gen myrule.yaml
 ```
 
 Then, edit the file.
 
-```
-{
-  "headerFormat": "{{.type}}{{.scope_with_parens}}{{.bang}}: {{.emoji_unicode}}{{.description}}",
-  "headerFormatHint": ".type, .scope, .scope_with_parens, .bang(if BREAKING CHANGE), .emoji, .emoji_unicode, .description",
-  "types": {
-    "# comment1": {
-      "description": "comment, if name starts with #"
-    },
-    "feat": {
-      "description": "A new feature",
-      "emoji": ":sparkles:"
-    },
-    "fix": {
-      "description": "A bug fix",
-      "emoji": ":bug:"
-    },
+```yaml
+headerformat: '{{.type}}{{.scope_with_parens}}{{.bang}}: {{.emoji_unicode}}{{.description}}'
+headerformathint: .type, .scope, .scope_with_parens, .bang(if BREAKING CHANGE), .emoji, .emoji_unicode, .description
+types:
+    '# comment1':
+        desc: 'comment starts with #'
+        emoji: ""
+    feat:
+        desc: A new feature
+        emoji: ':sparkles:'
+    fix:
+        desc: A bug fix
+        emoji: ':bug:'
     :
   },
-  "denyEmptyType": false,
-  "denyAdlibType": false,
-  "useBreakingChange": false
-}
+denyemptytype: false
+denyadlibtype: false
+usebreakingchange: false
 ```
 
 ## Record and complete scope history
@@ -94,11 +90,11 @@ dummy text
 1. gitconfig ([cx] rule={PATH})
 2. current worktree root
 3. config directory
-   - {CONFIG_DIR}/git-cx/.cx.json
-   - Windows: %appdata%\git-cx\.cx.json
+   - {CONFIG_DIR}/git-cx/.cx.yaml
+   - Windows: %appdata%\git-cx\.cx.yaml
    - (see https://cs.opensource.google/go/go/+/go1.17.3:src/os/file.go;l=457)
 4. exe dir
-   - .cx.json
-   - Place the json in the same location as the executable.
+   - .cx.yaml
+   - Place the yaml in the same location as the executable.
 
 <!-- vim: set et ft=markdown sts=4 sw=4 ts=4 tw=0 : -->
