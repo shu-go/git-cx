@@ -169,7 +169,7 @@ func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
 		"",
 	))
 	ct.Set("# comment2", commitTypeAsOM(
-		"This default definition is from https://github.com/commitizen/conventional-commit-types/blob/master/index.json",
+		"This default definition is from https://github.com/angular/angular/blob/main/CONTRIBUTING.md#-commit-message-guidelines",
 		"",
 	))
 
@@ -184,10 +184,6 @@ func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
 	ct.Set("docs", commitTypeAsOM(
 		"Documentation only changes",
 		":memo:",
-	))
-	ct.Set("style", commitTypeAsOM(
-		"Changes that do not affect the meaning of the code",
-		":gem:",
 	))
 	ct.Set("refactor", commitTypeAsOM(
 		"A code change that neither fixes a bug nor adds a feature",
@@ -208,10 +204,6 @@ func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
 	ct.Set("ci", commitTypeAsOM(
 		"Changes to our CI configuration files and scripts",
 		":hammer:",
-	))
-	ct.Set("chore", commitTypeAsOM(
-		"Other changes that don't modify src or test files",
-		"",
 	))
 	ct.Set("revert", commitTypeAsOM(
 		"Reverts a previous commit",
