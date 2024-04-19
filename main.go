@@ -27,7 +27,7 @@ const (
 	userConfigFolder = "git-cx"
 
 	defaultRuleFileName   = ".cx"
-	defaultScopesFileName = ".scope-history.json"
+	defaultScopesFileName = ".scope-history"
 
 	configSection      = "cx"
 	configRule         = "rule"
@@ -290,40 +290,30 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string) {
 		rootDir = wt.Filesystem.Root()
 	}
 
+	var exactPath string
 	if rootDir != "" {
 		// config
 		if cfg := getGitConfig(repos, configScopeHistory); cfg != nil {
-			filename := filepath.Join(rootDir, *cfg)
-			if sc, err := tryReadScopesFile(filename); err == nil {
-				return sc, filename
-			}
-		}
-
-		// rootDir
-		filename := filepath.Join(rootDir, defaultScopesFileName)
-		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename
+			exactPath = filepath.Join(rootDir, *cfg)
 		}
 	}
 
-	// user config dir
-	if cp, err := os.UserConfigDir(); err == nil {
-		filename := filepath.Join(cp, userConfigFolder, defaultScopesFileName)
-		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename
+	finder := findcfg.New(
+		findcfg.ExactPath(exactPath),
+		findcfg.JSON(),
+		findcfg.Dir(rootDir),
+		findcfg.UserConfigDir(userConfigFolder),
+		findcfg.ExecutableDir(),
+	)
+	found := finder.Find(defaultScopesFileName)
+	if found != nil {
+		if sc, err := tryReadScopesFile(found.Path); err == nil {
+			return sc, exactPath
 		}
+		return nil, finder.FallbackPath(defaultScopesFileName)
 	}
 
-	// executable dir
-	if ep, err := os.Executable(); err == nil {
-		ed, _ := filepath.Split(ep)
-		filename := filepath.Join(ed, defaultScopesFileName)
-		if sc, err := tryReadScopesFile(filename); err == nil {
-			return sc, filename
-		}
-	}
-
-	return nil, ""
+	return nil, finder.FallbackPath(defaultScopesFileName)
 }
 
 func tryReadScopesFile(filename string) (Scopes, error) {
