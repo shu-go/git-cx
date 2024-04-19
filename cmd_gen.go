@@ -10,6 +10,7 @@ import (
 )
 
 type genCmd struct {
+	Emoji bool `cli:"emoji"`
 }
 
 func (c genCmd) Run(g globalCmd, args []string) error {
@@ -25,7 +26,7 @@ func (c genCmd) Run(g globalCmd, args []string) error {
 
 	fmt.Fprintf(os.Stderr, "output: %v\n", filename)
 
-	rule := defaultRule()
+	rule := defaultRule(c.Emoji)
 
 	if in(filepath.Ext(filename), ".json") {
 		content, err := json.MarshalIndent(rule, "", "  ")

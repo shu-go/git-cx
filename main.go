@@ -151,9 +151,9 @@ func (c *globalCmd) prepare(repos *git.Repository) error {
 	return nil
 }
 
-func defaultRule() Rule {
+func defaultRule(emoji bool) Rule {
 	return Rule{
-		Types:             defaultCommitTypes(),
+		Types:             defaultCommitTypes(emoji),
 		DenyEmptyType:     false,
 		DenyAdlibType:     false,
 		UseBreakingChange: false,
@@ -162,7 +162,14 @@ func defaultRule() Rule {
 	}
 }
 
-func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
+func defaultCommitTypes(emoji bool) *orderedmap.OrderedMap[string, CommitType] {
+	iif := func(cond bool, t, f string) string {
+		if cond {
+			return t
+		}
+		return f
+	}
+
 	ct := orderedmap.New[string, CommitType]()
 	ct.Set("# comment1", commitTypeAsOM(
 		"comment starts with #",
@@ -175,39 +182,39 @@ func defaultCommitTypes() *orderedmap.OrderedMap[string, CommitType] {
 
 	ct.Set("feat", commitTypeAsOM(
 		"A new feature",
-		":sparkles:",
+		iif(emoji, ":sparkles:", ""),
 	))
 	ct.Set("fix", commitTypeAsOM(
 		"A bug fix",
-		":bug:",
+		iif(emoji, ":bug:", ""),
 	))
 	ct.Set("docs", commitTypeAsOM(
 		"Documentation only changes",
-		":memo:",
+		iif(emoji, ":memo:", ""),
 	))
 	ct.Set("refactor", commitTypeAsOM(
 		"A code change that neither fixes a bug nor adds a feature",
-		":recycle:",
+		iif(emoji, ":recycle:", ""),
 	))
 	ct.Set("perf", commitTypeAsOM(
 		"A code change that improves performance",
-		":zap:",
+		iif(emoji, ":zap:", ""),
 	))
 	ct.Set("test", commitTypeAsOM(
 		"Adding missing tests or correcting existing tests",
-		":test_tube:",
+		iif(emoji, ":test_tube:", ""),
 	))
 	ct.Set("build", commitTypeAsOM(
 		"Changes that affect the build system or external dependencies",
-		":package:",
+		iif(emoji, ":package:", ""),
 	))
 	ct.Set("ci", commitTypeAsOM(
 		"Changes to our CI configuration files and scripts",
-		":hammer:",
+		iif(emoji, ":hammer:", ""),
 	))
 	ct.Set("revert", commitTypeAsOM(
 		"Reverts a previous commit",
-		":rewind:",
+		iif(emoji, ":rewind:", ""),
 	))
 	return ct
 }
@@ -241,7 +248,7 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 		}
 	}
 
-	r := defaultRule()
+	r := defaultRule(false)
 	return &r, finder.FallbackPath(defaultRuleFileName)
 }
 
