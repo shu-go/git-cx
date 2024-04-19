@@ -317,6 +317,7 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string) {
 
 	finder := findcfg.New(
 		findcfg.ExactPath(exactPath),
+		findcfg.YAML(),
 		findcfg.JSON(),
 		findcfg.Dir(rootDir),
 		findcfg.UserConfigDir(userConfigFolder),
@@ -350,10 +351,25 @@ func tryReadScopesFile(filename string) (Scopes, error) {
 	}
 
 	sc := make(Scopes)
-	if err = json.Unmarshal(content, &sc); err != nil {
-		return nil, err
-	}
 
+	if in(filepath.Ext(filename), ".yaml", ".yml") {
+		if err = yaml.Unmarshal(content, &sc); err != nil {
+			return nil, err
+		}
+		return sc, nil
+	}
+	if in(filepath.Ext(filename), ".json") {
+		if err = json.Unmarshal(content, &sc); err != nil {
+			return nil, err
+		}
+		return sc, nil
+	}
+	if err = yaml.Unmarshal(content, &sc); err != nil {
+		if err = json.Unmarshal(content, &sc); err != nil {
+			return nil, err
+		}
+		return sc, nil
+	}
 	return sc, nil
 }
 
@@ -413,7 +429,12 @@ func (c globalCmd) buildupCommitMessage() string {
 			outscope.Set(s.scope, s.ts)
 		}
 
-		content, _ := json.MarshalIndent(outscope, "", "  ")
+		var content []byte
+		if in(filepath.Ext(c.scopesFileName), ".json") {
+			content, _ = json.MarshalIndent(outscope, "", "  ")
+		} else {
+			content, _ = yaml.Marshal(outscope)
+		}
 
 		if file, err := os.Create(c.scopesFileName); err == nil {
 			_, err = file.WriteString(string(content))
@@ -700,7 +721,7 @@ git cx
 ` + rule + scope + `
 
 # record and complete scope history
-(gitconfig: [cx] scopes=.scopes.json)`
+(gitconfig: [cx] scopes=.scopes.yaml)`
 	app.Copyright = "(C) 2024 Shuhei Kubota"
 	app.SuppressErrorOutput = true
 	if err := app.Run(os.Args); err != nil {

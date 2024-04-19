@@ -65,7 +65,7 @@ Edit your gitconfig (I recommend to use [shu-go/git-konfig](https://github.com/s
 
 ```
 [cx]
-  scopes = myscopes.json
+  scopes = myscopes.yaml
 ```
 
 ## An example
