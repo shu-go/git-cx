@@ -234,6 +234,7 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 	}
 
 	finder := findcfg.New(
+		findcfg.Name(defaultRuleFileName),
 		findcfg.ExactPath(exactPath),
 		findcfg.YAML(),
 		findcfg.JSON(),
@@ -241,7 +242,7 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 		findcfg.UserConfigDir(userConfigFolder),
 		findcfg.ExecutableDir(),
 	)
-	found := finder.Find(defaultRuleFileName)
+	found := finder.Find()
 	if found != nil {
 		if r, err := tryReadRuleFile(found.Path); err == nil {
 			return r, found.Path
@@ -249,7 +250,7 @@ func readRuleFile(repos *git.Repository) (*Rule, string) {
 	}
 
 	r := defaultRule(false)
-	return &r, finder.FallbackPath(defaultRuleFileName)
+	return &r, finder.FallbackPath()
 }
 
 func commitTypeAsOM(desc string, emoji string) CommitType {
@@ -315,6 +316,7 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string) {
 	}
 
 	finder := findcfg.New(
+		findcfg.Name(defaultScopesFileName),
 		findcfg.ExactPath(exactPath),
 		findcfg.YAML(),
 		findcfg.JSON(),
@@ -322,15 +324,15 @@ func readScopesFile(repos *git.Repository) (scopes Scopes, fileName string) {
 		findcfg.UserConfigDir(userConfigFolder),
 		findcfg.ExecutableDir(),
 	)
-	found := finder.Find(defaultScopesFileName)
+	found := finder.Find()
 	if found != nil {
 		if sc, err := tryReadScopesFile(found.Path); err == nil {
 			return sc, exactPath
 		}
-		return nil, finder.FallbackPath(defaultScopesFileName)
+		return nil, finder.FallbackPath()
 	}
 
-	return nil, finder.FallbackPath(defaultScopesFileName)
+	return nil, finder.FallbackPath()
 }
 
 func tryReadScopesFile(filename string) (Scopes, error) {
