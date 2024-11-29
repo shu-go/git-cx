@@ -1,0 +1,39 @@
+headerformat: '{{.type}}{{.scope_with_parens}}{{.bang}}: {{.emoji_unicode}}{{.description}}'
+headerformathint: .type, .scope, .scope_with_parens, .bang(if BREAKING CHANGE), .emoji, .emoji_unicode, .description
+types:
+    '# comment1':
+        desc: 'comment starts with #'
+        emoji: ""
+    '# comment2':
+        desc: This default definition is from https://github.com/angular/angular/blob/main/CONTRIBUTING.md#-commit-message-guidelines
+        emoji: ""
+    feat:
+        desc: A new feature
+        emoji: ':sparkles:'
+    fix:
+        desc: A bug fix
+        emoji: ':bug:'
+    docs:
+        desc: Documentation only changes
+        emoji: ':memo:'
+    refactor:
+        desc: A code change that neither fixes a bug nor adds a feature
+        emoji: ':recycle:'
+    perf:
+        desc: A code change that improves performance
+        emoji: ':zap:'
+    test:
+        desc: Adding missing tests or correcting existing tests
+        emoji: ':test_tube:'
+    build:
+        desc: Changes that affect the build system or external dependencies
+        emoji: ':package:'
+    ci:
+        desc: Changes to our CI configuration files and scripts
+        emoji: ':hammer:'
+    revert:
+        desc: Reverts a previous commit
+        emoji: ':rewind:'
+denyemptytype: false
+denyadlibtype: false
+usebreakingchange: false
