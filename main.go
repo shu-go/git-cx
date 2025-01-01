@@ -14,9 +14,12 @@ import (
 	"text/template"
 	"time"
 
-	prompt "github.com/c-bata/go-prompt"
+	prompt "github.com/elk-language/go-prompt"
+	pstrings "github.com/elk-language/go-prompt/strings"
+
 	git "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/plumbing/format/config"
+
 	"github.com/kyokomi/emoji/v2"
 	"github.com/shu-go/findcfg"
 	"github.com/shu-go/gli"
@@ -513,18 +516,21 @@ func (c globalCmd) promptType() string {
 
 		item := prompt.Suggest{
 			Text:        k,
-			Description: c.emojiOf(k, true) + typ.Desc,
+			Description: c.emojiOf(k, true) + " " + typ.Desc,
 		}
 		items = append(items, item)
 	}
 
-	typeCompleter := func(d prompt.Document) []prompt.Suggest {
-		//return prompt.FilterHasPrefix(items, d.GetWordBeforeCursor(), true)
-		return filterSuggestions(items, d.GetWordBeforeCursor(), true, fuzzyMatch)
+	typeCompleter := func(in prompt.Document) ([]prompt.Suggest, pstrings.RuneNumber, pstrings.RuneNumber) {
+		endIndex := in.CurrentRuneIndex()
+		w := in.GetWordBeforeCursor()
+		startIndex := endIndex - pstrings.RuneCountInString(w)
+
+		return prompt.FilterHasPrefix(items, w, true), startIndex, endIndex
 	}
 
 	for typ == "" {
-		typ = prompt.Input("Type: ", typeCompleter, prompt.OptionShowCompletionAtStart())
+		typ = prompt.Input(prompt.WithPrefix("Type: "), prompt.WithCompleter(typeCompleter), prompt.WithShowCompletionAtStart())
 		if typ == "" && c.rule.DenyEmptyType {
 			fmt.Fprintln(os.Stderr, "type is required")
 		}
@@ -559,13 +565,17 @@ func (c globalCmd) promptScope() string {
 	for i := range items {
 		items[i].Description = ""
 	}
-	scopeCompleter := func(d prompt.Document) []prompt.Suggest {
-		return prompt.FilterHasPrefix(items, d.GetWordBeforeCursor(), true)
+	scopeCompleter := func(in prompt.Document) ([]prompt.Suggest, pstrings.RuneNumber, pstrings.RuneNumber) {
+		endIndex := in.CurrentRuneIndex()
+		w := in.GetWordBeforeCursor()
+		startIndex := endIndex - pstrings.RuneCountInString(w)
+
+		return prompt.FilterHasPrefix(items, w, true), startIndex, endIndex
 	}
 	scope = prompt.Input(
-		"Scope: ",
-		scopeCompleter,
-		prompt.OptionShowCompletionAtStart(),
+		prompt.WithPrefix("Scope: "),
+		prompt.WithCompleter(scopeCompleter),
+		prompt.WithShowCompletionAtStart(),
 	)
 
 	return scope
@@ -574,11 +584,15 @@ func (c globalCmd) promptScope() string {
 func (c globalCmd) promptDesc() string {
 	var desc string
 
-	descCompleter := func(d prompt.Document) []prompt.Suggest {
-		return prompt.FilterHasPrefix(nil, d.GetWordBeforeCursor(), true)
+	descCompleter := func(in prompt.Document) ([]prompt.Suggest, pstrings.RuneNumber, pstrings.RuneNumber) {
+		endIndex := in.CurrentRuneIndex()
+		w := in.GetWordBeforeCursor()
+		startIndex := endIndex - pstrings.RuneCountInString(w)
+
+		return prompt.FilterHasPrefix(nil, w, true), startIndex, endIndex
 	}
 
-	desc = prompt.Input("Description: ", descCompleter)
+	desc = prompt.Input(prompt.WithPrefix("Description: "), prompt.WithCompleter(descCompleter))
 	desc = strings.TrimSpace(desc)
 	if desc == "" {
 		fmt.Fprintln(os.Stderr, "description required")
@@ -647,10 +661,14 @@ func (c globalCmd) promptBreakingChange() string {
 	var breakingChange string
 
 	if c.rule.UseBreakingChange {
-		bcCompleter := func(d prompt.Document) []prompt.Suggest {
-			return prompt.FilterHasPrefix(nil, d.GetWordBeforeCursor(), true)
+		bcCompleter := func(in prompt.Document) ([]prompt.Suggest, pstrings.RuneNumber, pstrings.RuneNumber) {
+			endIndex := in.CurrentRuneIndex()
+			w := in.GetWordBeforeCursor()
+			startIndex := endIndex - pstrings.RuneCountInString(w)
+
+			return prompt.FilterHasPrefix(nil, w, true), startIndex, endIndex
 		}
-		breakingChange = prompt.Input("BREAKING CHANGE: ", bcCompleter)
+		breakingChange = prompt.Input(prompt.WithPrefix("BREAKING CHANGE: "), prompt.WithCompleter(bcCompleter))
 		breakingChange = strings.TrimSpace(breakingChange)
 	}
 

@@ -3,8 +3,8 @@ module github.com/shu-go/git-cx
 go 1.23
 
 require (
-	github.com/c-bata/go-prompt v0.2.6
 	github.com/go-git/go-git/v5 v5.12.0
+	github.com/elk-language/go-prompt v1.1.5
 	github.com/kyokomi/emoji/v2 v2.2.13
 	github.com/shu-go/findcfg v0.2.0
 	github.com/shu-go/gli v1.5.7
