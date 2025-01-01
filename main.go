@@ -84,7 +84,7 @@ func (c globalCmd) Run() error {
 			switch s.Worktree {
 			case git.Modified, git.Added, git.Deleted, git.Renamed, git.Copied, git.UpdatedButUnmerged:
 				if _, err := wt.Add(f); err != nil {
-					return fmt.Errorf("try git gc: adding %s: %w", s.Worktree, f, err)
+					return fmt.Errorf("try git gc: adding %s: %w", f, err)
 				}
 			default:
 				//nop
