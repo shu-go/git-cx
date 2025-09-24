@@ -1,6 +1,6 @@
 module github.com/shu-go/git-cx
 
-go 1.24
+go 1.25.1
 
 require (
 	github.com/elk-language/go-prompt v1.1.5
